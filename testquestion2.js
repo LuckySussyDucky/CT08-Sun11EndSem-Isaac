@@ -1,1 +1,95 @@
+let handPose;
+let hands = [];
+let video;
+
+let fingerTip;
+let ball;
+
+let points = 0;
+
+function preload(){
+
+    let options = {
+        flipped: true,
+        runtime: "tfjs",
+        modelType: "lite",
+        detectorModelUrl: undefined,
+        landmarkModeUrl: undefined,
+    }
+
+    handPose = ml5.handPose(options);
+}
+
+function setup () {
+    world.gravity.y = 6;
+
+    new Canvas(640, 480);
+
+    let constraints = {
+        video:{
+            mandatory:{
+                midWidth: width,
+                minHeight: height
+            },
+            optional: [{minFrameRate: 60}]
+        },
+        audio: false,
+        flipped: true,
+        };  
+
+    video = createCapture(constraints);
+    video.size(width, height);
+    video.hide();
+
+    handPose.detectStart(video, gotHands);
+
+    fingerTip = new Sprite();
+    fingerTip.width = 300;
+    fingerTip.height = 20;
+    fingerTip.collider = "static"
+
+    ball = new Sprite();
+    ball.diameter = 40;
+    ball.x = 320;
+    ball.y = 100;
+    ball.collider = "static";
+    ball.bounciness = 1;
+}
+
+function gotHands(results){
+    hands = results;
+}
+
+function draw () {
+    background("black");
+    
+    image(video, 0, 0, width, height);
+
+    textSize(12);
+    textAlign(RIGHT, TOP);
+    fill("white");
+    text("Points: " + points, width - 10, 10);
+
+    for (let i = 0; i < hands.length; i++) {
+        let hand = hands[i];
+
+        for (let j = 0; j < hand.keypoints.length; j++) {
+            let keypoint = hand.keypoints[j];
+            circle(keypoint.x, keypoint.y, 10);
+
+            if (j === 4) {
+                fingerTip.x = keypoint.x;
+                fingerTip.y = keypoint.y;
+            }
+        }
+    }
+
+    if (mouse.presses(LEFT)) {
+        ball.collider = "dynamic";
+    }
+
+    if (ball.collide(fingerTip)) {
+        points += 1;
+    }
+}
 
